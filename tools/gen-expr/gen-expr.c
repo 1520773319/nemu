@@ -19,6 +19,7 @@
 #include <time.h>
 #include <assert.h>
 #include <string.h>
+#include <sys/time.h>
 
 // this should be enough
 static char buf[65536] = {};
@@ -31,14 +32,118 @@ static char *code_format =
 "  return 0; "
 "}";
 
+unsigned int getRandomSeed() {
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  return (unsigned int)(tv.tv_sec * 1000000 + tv.tv_usec);
+}
+
+unsigned int randomNumber() {
+  srand(getRandomSeed());
+  unsigned int highBits = (unsigned int)rand() << 16;
+  unsigned int lowBits = (unsigned int)rand();
+  unsigned int result = highBits | lowBits;
+
+  return result & 0xFF;
+}
+
+#define MAXTOKENS 28
+static void gen(char *left, char *right, int tokens)
+{ 
+  int llen = left?strlen(left):0;
+  int rlen = right?strlen(right):0;
+  char s[512] = {0};
+  char op[4] = {'+', '-', '*', '/'};
+  char sign = op[randomNumber()%4];
+  int isParentheses=randomNumber()%2;
+  unsigned int l = randomNumber();
+  unsigned int r = randomNumber();
+
+  if(tokens >= MAXTOKENS)
+  {
+    if(left)
+      sprintf(buf, "%s", left);
+    else
+      sprintf(buf, "%s", right);
+
+    buf[strlen(buf)] = '\0';
+    return;
+  }
+
+  if(sign == '/')
+  {
+    rlen = 0; // 如果是除法， 右表达式用单个数字替代
+    while(r == 0)
+      r = randomNumber();
+  }
+
+  if(llen != 0 && rlen != 0)
+  {
+    if(isParentheses)
+    {
+      sprintf(s, "(%s%c%s)",left, sign, right);
+      tokens += 1+2;
+    }
+    else 
+    {
+      sprintf(s, "%s%c%s", left, sign, right);
+      tokens += 1;
+    }
+  }
+  else if(llen == 0 && rlen == 0)
+  {
+    if(isParentheses)
+    {
+      sprintf(s, "(%d%c%d)", l, sign, r);
+      tokens += 3+2;
+    }
+    else 
+    {
+      sprintf(s, "%d%c%d", l, sign, r);
+      tokens += 3;
+    }
+  }
+  else if(llen != 0 && rlen == 0)
+  {     
+    if(isParentheses)
+    {
+      sprintf(s, "(%s%c%d)", left, sign, r);
+      tokens += 2 + 2;
+    }
+    else 
+    {
+      sprintf(s, "%s%c%d", left, sign, r);
+      tokens += 2;
+    }
+  }
+  else if(llen == 0 && rlen != 0)
+  { 
+    if(isParentheses)
+    {
+      sprintf(s, "(%d%c%s)", l, sign, right);
+      tokens += 2 + 2;
+    }
+    else
+    {
+      sprintf(s, "%d%c%s", l, sign, right);
+      tokens += 2;
+    }
+  }
+
+  if(randomNumber()%2)
+    gen(s, NULL, tokens);
+  else
+    gen(NULL, s, tokens);
+}
+
 static void gen_rand_expr() {
-  buf[0] = '\0';
+  gen(NULL, NULL, 0);
 }
 
 int main(int argc, char *argv[]) {
   int seed = time(0);
   srand(seed);
-  int loop = 1;
+  int loop = 2000;
   if (argc > 1) {
     sscanf(argv[1], "%d", &loop);
   }
