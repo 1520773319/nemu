@@ -17,6 +17,7 @@
 #include <cpu/cpu.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include "regex.h"
 #include "sdb.h"
 
 static int is_batch_mode = false;
@@ -53,6 +54,9 @@ static int cmd_q(char *args) {
 }
 
 static int cmd_help(char *args);
+static int cmd_si(char *args);
+static int cmd_p(char *args);
+static int cmd_test(char *args);
 
 static struct {
   const char *name;
@@ -62,7 +66,9 @@ static struct {
   { "help", "Display information about all supported commands", cmd_help },
   { "c", "Continue the execution of the program", cmd_c },
   { "q", "Exit NEMU", cmd_q },
-
+  { "si", "Single step", cmd_si},
+  { "p", "print expression", cmd_p},
+  { "t", "test", cmd_test}
   /* TODO: Add more commands */
 
 };
@@ -91,6 +97,90 @@ static int cmd_help(char *args) {
   }
   return 0;
 }
+
+static int cmd_si(char *args)
+{ 
+  const char *pattern = "^[1-9][0-9]*$";
+  regex_t regex;
+  int ret;
+
+  ret = regcomp(&regex, pattern, REG_EXTENDED);
+  if (ret != 0)
+  {
+    printf("Could not compile regex\n");
+    return 0;
+  }
+
+  ret = regexec(&regex, args, 0, NULL, 0);
+  regfree(&regex);
+
+  if(ret == 0)
+  {
+    cpu_exec(atoi(args));
+  }
+  else if (ret == REG_NOMATCH)
+  {
+    printf("Unknown command '%s'\n", args);
+  }
+  else
+    printf("Regex match failed\n");
+
+  return 0;
+}
+
+static int cmd_p(char *args)
+{ 
+  bool ret = true;
+  word_t a = expr(args, &ret);
+
+  if(ret == false)
+    printf("p %s false ! \n\n", args);
+  else
+    printf("%u\n\n", a);
+
+  return 0;
+}
+
+static int cmd_test()
+{ 
+  int flag = 1;
+  FILE *file = fopen("/home/wangc/ics-pa/nemu/tools/gen-expr/a.txt", "r");
+  if (file == NULL) {
+      perror("Failed to open file");
+      return EXIT_FAILURE;
+  }
+
+  char str1[100], str2[100];
+
+  printf("Read: /home/wangc/ics-pa/nemu/tools/gen-expr/a.txt\n");
+
+  // 按行读取两个字符串
+  while (fscanf(file, "%s %s", str1, str2) == 2) {
+    bool ret = true;
+    word_t a = expr(str2, &ret);
+    char tmp[20]={0};
+    sprintf(tmp, "%u", a);
+
+    if(strcmp(tmp, str1) == 0)
+    {
+      // printf("%s\n%s\n", str2, str1);
+      // printf("%s\n\n", ANSI_FMT("TRUE", ANSI_FG_GREEN));
+    }
+    else
+    {
+      printf("%s\n%s\n", str2, str1);
+      printf("%s: %s\n\n", ANSI_FMT("FALSE", ANSI_FG_YELLOW ANSI_BG_RED), tmp);
+      flag = 0;
+    }
+  }
+
+  if(flag)
+    printf("%s\n\n", ANSI_FMT("ALL IS RIGHT!", ANSI_FG_GREEN));
+
+  fclose(file);
+  return 0;
+}
+
 
 void sdb_set_batch_mode() {
   is_batch_mode = true;
