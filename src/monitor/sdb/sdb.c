@@ -103,7 +103,13 @@ static int cmd_si(char *args)
   const char *pattern = "^[1-9][0-9]*$";
   regex_t regex;
   int ret;
-
+  
+  if (!args || (args && strlen(args)==0))
+  {
+    cpu_exec(1);
+    return 0;
+  }
+  
   ret = regcomp(&regex, pattern, REG_EXTENDED);
   if (ret != 0)
   {
