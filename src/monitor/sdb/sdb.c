@@ -158,7 +158,7 @@ static int cmd_p(char *args)
 
 static int cmd_test(char *args)
 { 
-  int flag = 1;
+  int error = 0;
   FILE *file = fopen("/home/wangc/ics-pa/nemu/tools/gen-expr/a.txt", "r");
   if (file == NULL) {
       perror("Failed to open file");
@@ -185,12 +185,14 @@ static int cmd_test(char *args)
     {
       printf("%s\n%s\n", str2, str1);
       printf("%s: %s\n\n", ANSI_FMT("FALSE", ANSI_FG_YELLOW ANSI_BG_RED), tmp);
-      flag = 0;
+      error++;
     }
   }
 
-  if(flag)
+  if(!error)
     printf("%s\n\n", ANSI_FMT("ALL IS RIGHT!", ANSI_FG_GREEN));
+  else
+    printf("error: %d\n\n", error);
 
   fclose(file);
   return 0;
