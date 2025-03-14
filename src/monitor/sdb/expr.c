@@ -90,7 +90,7 @@ typedef struct token {
 
 static Token tokens[32] __attribute__((used)) = {};
 static int nr_token __attribute__((used))  = 0;
-sword_t eval(Token *p, Token *q);
+sword_t eval(Token *p, Token *q, bool *success);
 enum EXPR_TYPE check_parentheses(Token *p, Token *q);
 Token* get_operation_main(Token *p, Token *q);
 
@@ -158,10 +158,11 @@ word_t expr(char *e, bool *success) {
   //   printf("%d %s\n", tokens[i].type, tokens[i].str);
 
   /* TODO: Insert codes to evaluate the expression. */
-  return eval(&(tokens[0]), &(tokens[nr_token-1]));
+  return eval(&(tokens[0]), &(tokens[nr_token-1]), success);
+  
 }
 
-sword_t eval(Token *p, Token *q)
+sword_t eval(Token *p, Token *q, bool *success)
 {
   Token *op = NULL;
   sword_t val1 = 0, val2 = 0;
@@ -179,10 +180,11 @@ sword_t eval(Token *p, Token *q)
   }
   else if(check_parentheses(p, q) == SUCCESS)
   {
-    return eval(p+1, q-1);
+    return eval(p+1, q-1, success);
   }
   else if(check_parentheses(p, q) == BAD)
   {
+    *success = false;
     return 0;
   }
   else
@@ -190,19 +192,24 @@ sword_t eval(Token *p, Token *q)
     op = get_operation_main(p, q);
     assert(op != NULL);
 
-    val1 = eval(p, op - 1);
-    val2 = eval(op + 1, q);
+    val1 = eval(p, op - 1, success);
+    val2 = eval(op + 1, q, success);
+
+    if(*success == false)
+      return 0;
 
     switch (op->type) {
+      case TK_EQ:    /*printf("%d * %d = %d\n", val1, val2, val1==val2)*/;return val1 == val2;
       case TK_PLUS:  /*printf("%d + %d = %d\n", val1, val2, val1+val2)*/; return val1 + val2;
       case TK_SUB:   /*printf("%d - %d = %d\n", val1, val2, val1-val2)*/; return val1 - val2;
       case TK_MULTI: /*printf("%d * %d = %d\n", val1, val2, val1*val2)*/; return val1 * val2;
       case TK_DIV:   /*printf("%d / %d = %d\n", val1, val2, val1/val2)*/; 
         if(val2 == 0){
+          *success = false;
           printf("Division by zero\n");
-          val2 = 1;
+          return 0;
         }
-      return val1 / val2;
+        return val1 / val2;
       default: assert(0);
     }
   }
@@ -214,7 +221,31 @@ Token* get_operation_main(Token *p, Token *q)
   Token *index = NULL;
   Token *pos = NULL;
   int LP = 0;
+  
+  /* 先取"==", 且“==”不在括号里 */
+  for(index = p; index < q; index++)
+  {
+    if(index->type == TK_LP)
+    {
+      LP++;
+      while(LP)
+      {
+        index++;
+        if(index->type == TK_LP)
+          LP++;
+        else if(index->type == TK_RP)
+          LP--;
+      }
+    }
+    else if(index->type == TK_EQ)
+    {
+      pos = index;
+      return pos;
+    }
+  }
 
+  /* 再取其他符号,且符号不在括号里 */
+  LP = 0;
   for(index = p; index < q; index++)
   {
     if(index->type == TK_LP)
@@ -248,21 +279,20 @@ enum EXPR_TYPE check_parentheses(Token *p, Token *q)
   Token *index = NULL;
   int LP = 0;
 
-  if(p->type != TK_LP || q->type != TK_RP)
-    return NO_SURROUNDED;
-
+  /* "(4 + 3)) * ((2 - 1)" false, bad expression */
   for(index = p; index <= q; index++)
   {
     if(index->type == TK_LP)
       LP++;
     else if(index->type == TK_RP)
       LP--;
-
-    /* "(4 + 3)) * ((2 - 1)" false, bad expression */
-    if(LP < 0)
-      return BAD;
   }
+  if(LP < 0 || LP > 0)
+    return BAD;
 
+  /* "(4 + 3) * (2 - 1)"   
+       false, the leftmost '(' and the rightmost ')' are not matched
+  */
   LP = 0;
   for(index = p; index <= q; index++)
   {
@@ -271,13 +301,12 @@ enum EXPR_TYPE check_parentheses(Token *p, Token *q)
     else if(index->type == TK_RP)
       LP--;
 
-    /* "(4 + 3) * (2 - 1)"   
-       false, the leftmost '(' and the rightmost ')' are not matched
-    */
     if(LP == 0 && index > p && index < q)
       return NO_MATCH;
-
   }
+
+  if(p->type != TK_LP || q->type != TK_RP)
+    return NO_SURROUNDED;
 
   return SUCCESS;
 }
