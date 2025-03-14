@@ -156,7 +156,7 @@ static int cmd_p(char *args)
   return 0;
 }
 
-static int cmd_test()
+static int cmd_test(char *args)
 { 
   int flag = 1;
   FILE *file = fopen("/home/wangc/ics-pa/nemu/tools/gen-expr/a.txt", "r");
@@ -176,7 +176,7 @@ static int cmd_test()
     char tmp[20]={0};
     sprintf(tmp, "%u", a);
 
-    if(strcmp(tmp, str1) == 0)
+    if(ret == true && strcmp(tmp, str1) == 0)
     {
       // printf("%s\n%s\n", str2, str1);
       // printf("%s\n\n", ANSI_FMT("TRUE", ANSI_FG_GREEN));

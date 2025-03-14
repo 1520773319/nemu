@@ -70,12 +70,12 @@ static void gen(char *left, char *right, int tokens)
     return;
   }
 
-  if(sign == '/')
-  {
-    rlen = 0; // 如果是除法， 右表达式用单个数字替代
-    while(r == 0)
-      r = randomNumber();
-  }
+  // if(sign == '/')
+  // {
+  //   rlen = 0; // 如果是除法， 右表达式用单个数字替代
+  //   while(r == 0)
+  //     r = randomNumber();
+  // }
 
   if(llen != 0 && rlen != 0)
   {
