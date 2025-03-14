@@ -17,13 +17,18 @@
 #include <cpu/cpu.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include <memory/host.h>
+#include <memory/paddr.h>
+#include <memory/vaddr.h>
 #include "regex.h"
 #include "sdb.h"
+#include <math.h>
 
 static int is_batch_mode = false;
 
 void init_regex();
 void init_wp_pool();
+word_t hexstr_to_num();
 
 /* We use the `readline' library to provide more flexibility to read from stdin. */
 static char* rl_gets() {
@@ -57,6 +62,8 @@ static int cmd_help(char *args);
 static int cmd_si(char *args);
 static int cmd_p(char *args);
 static int cmd_test(char *args);
+static int cmd_info(char *args);
+static int cmd_memx(char *args);
 
 static struct {
   const char *name;
@@ -68,7 +75,9 @@ static struct {
   { "q", "Exit NEMU", cmd_q },
   { "si", "Single step", cmd_si},
   { "p", "print expression", cmd_p},
-  { "t", "test", cmd_test}
+  { "t", "test", cmd_test},
+  { "info", "print registers", cmd_info},
+  { "x", "print memroy", cmd_memx},
   /* TODO: Add more commands */
 
 };
@@ -104,7 +113,7 @@ static int cmd_si(char *args)
   regex_t regex;
   int ret;
   
-  if (!args || (args && strlen(args)==0))
+  if (!args)
   {
     cpu_exec(1);
     return 0;
@@ -187,6 +196,49 @@ static int cmd_test()
   return 0;
 }
 
+static int cmd_info(char *args)
+{
+  isa_reg_display();
+  return 0;
+}
+
+static int cmd_memx(char *args)
+{
+  if(args == NULL)
+  {
+    printf("Argument required (starting display address).\n");
+    return 1;
+  }
+
+  const char *pattern = "^0x[0-9]*$";
+  regex_t regex;
+  word_t mem;
+  int ret;
+  
+  ret = regcomp(&regex, pattern, REG_EXTENDED);
+  if (ret != 0)
+  {
+    printf("Could not compile regex\n");
+    return 0;
+  }
+
+  ret = regexec(&regex, args, 0, NULL, 0);
+  regfree(&regex);
+
+  if(ret == 0)
+  {
+    mem = host_read(guest_to_host(hexstr_to_num(args)), 4);
+    printf("0x%08x\n", mem);
+  }
+  else if (ret == REG_NOMATCH)
+  {
+    printf("Unknown command '%s'\n", args);
+  }
+  else
+    printf("Regex match failed\n");
+
+  return 0;
+}
 
 void sdb_set_batch_mode() {
   is_batch_mode = true;
@@ -236,4 +288,16 @@ void init_sdb() {
 
   /* Initialize the watchpoint pool. */
   init_wp_pool();
+}
+
+word_t hexstr_to_num(char *str)
+{
+  int len = strlen(str);
+  word_t sum = 0;
+  int i = 0;
+
+  for(i = len - 1; i > 1; i--)
+    sum += (str[i] - '0')* pow(16, (len-2-i+1));
+
+  return sum;
 }
