@@ -30,6 +30,7 @@ enum {
   TK_LP,
   TK_RP,
   TK_NUM,
+  TK_HEXNUM,
   /* TODO: Add more token types */
 
 };
@@ -43,15 +44,16 @@ static struct rule {
    * Pay attention to the precedence level of different rules.
    */
 
-  {" +",  TK_NOTYPE},    // spaces
-  {"\\+", TK_PLUS},      // plus
-  {"==",  TK_EQ},        // equal
-  {"-",   TK_SUB},       // subtraction
-  {"\\*",   TK_MULTI},     // multiply
-  {"\\/", TK_DIV},       // division
-  {"\\(", TK_LP},        // open paren
-  {"\\)", TK_RP},        // close paren
-  {"[0-9]*\\.?[0-9]+",    TK_NUM},       // number
+  {" +",  TK_NOTYPE},               // spaces
+  {"\\+", TK_PLUS},                 // plus
+  {"==",  TK_EQ},                   // equal
+  {"-",   TK_SUB},                  // subtraction
+  {"\\*", TK_MULTI},                // multiply
+  {"\\/", TK_DIV},                  // division
+  {"\\(", TK_LP},                   // open paren
+  {"\\)", TK_RP},                   // close paren
+  {"0x[0-9a-fA-F]+",   TK_HEXNUM},  // Hex number
+  {"[0-9]*\\.?[0-9]+", TK_NUM},     // number
 };
 
 #define NR_REGEX ARRLEN(rules)
@@ -93,6 +95,7 @@ static int nr_token __attribute__((used))  = 0;
 sword_t eval(Token *p, Token *q, bool *success);
 enum EXPR_TYPE check_parentheses(Token *p, Token *q);
 Token* get_operation_main(Token *p, Token *q);
+extern word_t hexstr_to_num(char *str);
 
 static bool make_token(char *e) {
   int position = 0;
@@ -174,9 +177,18 @@ sword_t eval(Token *p, Token *q, bool *success)
   else if(p == q)
   {
     if(p->type == TK_NUM)
+    {
       return atoi(p->str);
+    }
+    else if(p->type == TK_HEXNUM)
+    {
+      return hexstr_to_num(p->str);
+    }
     else
+    {
+      *success = false;
       return 0;
+    }
   }
   else if(check_parentheses(p, q) == SUCCESS)
   {

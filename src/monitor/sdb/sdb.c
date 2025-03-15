@@ -299,7 +299,14 @@ word_t hexstr_to_num(char *str)
   int i = 0;
 
   for(i = len - 1; i > 1; i--)
-    sum += (str[i] - '0')* pow(16, (len-2-i+1));
+  {
+    if(isdigit(str[i]))
+      sum += (str[i] - '0')* pow(16, (len-2-i+1));
+    else if(str[i] >= 'a' && str[i] <= 'f')
+      sum += (str[i] - 'a' + 10)* pow(16, (len-2-i+1));
+    else if(str[i] >= 'A' && str[i] <= 'F')
+      sum += (str[i] - 'A' + 10)* pow(16, (len-2-i+1));
+  }
 
   return sum;
 }
