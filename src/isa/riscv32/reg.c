@@ -26,11 +26,38 @@ const char *regs[] = {
 void isa_reg_display() {
   for(int i = 0; i < sizeof(regs)/sizeof(char*); i++)
   {
-    printf("%-15s0x%-15x%-15d\n", regs[i], gpr(i), gpr(i));
+    printf("%-15s0x%-15x%-15u\n", regs[i], gpr(i), gpr(i));
   }
-  printf("%-15s0x%-15x%-15d\n", "pc", cpu.pc, cpu.pc);
+  printf("%-15s0x%-15x%-15u\n", "pc", cpu.pc, cpu.pc);
 }
 
 word_t isa_reg_str2val(const char *s, bool *success) {
+  int i = 0;
+
+  if(s == NULL)
+  {
+    *success = false;
+    printf("%s %d: s==NULL", __FUNCTION__, __LINE__);
+    return 0;
+  }
+
+  if (s && s[0] != '$')
+  {
+    *success = false;
+    printf("%s %d: format error\n", __FUNCTION__, __LINE__);
+    return 0;
+  }
+  
+  for(i = 0; i < sizeof(regs)/sizeof(char*); i++)
+  {
+    if(strcmp(regs[i], s+1) == 0)
+      return gpr(i);
+    else if (strcmp("pc", s+1) == 0)
+      return cpu.pc;
+  }
+
+  *success = false;
+  printf("No registers: %s\n", s+1);
+
   return 0;
 }

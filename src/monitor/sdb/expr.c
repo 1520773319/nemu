@@ -31,6 +31,7 @@ enum {
   TK_RP,
   TK_NUM,
   TK_HEXNUM,
+  TK_REG,
   /* TODO: Add more token types */
 
 };
@@ -54,6 +55,7 @@ static struct rule {
   {"\\)", TK_RP},                   // close paren
   {"0x[0-9a-fA-F]+",   TK_HEXNUM},  // Hex number
   {"[0-9]*\\.?[0-9]+", TK_NUM},     // number
+  {"\\$[\\$0-9a-z]+",  TK_REG},     // register
 };
 
 #define NR_REGEX ARRLEN(rules)
@@ -176,18 +178,12 @@ sword_t eval(Token *p, Token *q, bool *success)
   }
   else if(p == q)
   {
-    if(p->type == TK_NUM)
+    switch(p->type)
     {
-      return atoi(p->str);
-    }
-    else if(p->type == TK_HEXNUM)
-    {
-      return hexstr_to_num(p->str);
-    }
-    else
-    {
-      *success = false;
-      return 0;
+      case TK_NUM:    return atoi(p->str);break;
+      case TK_HEXNUM: return hexstr_to_num(p->str);break;
+      case TK_REG:    return isa_reg_str2val(p->str, success);break;
+      default:        *success = false;return 0;
     }
   }
   else if(check_parentheses(p, q) == SUCCESS)
