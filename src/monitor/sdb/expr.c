@@ -190,7 +190,9 @@ sword_t eval(Token *p, Token *q, bool *success)
   else
   {
     op = get_operation_main(p, q);
-    assert(op != NULL);
+    // assert(op != NULL);
+    if(op == NULL)
+      return 0;
 
     val1 = eval(p, op - 1, success);
     val2 = eval(op + 1, q, success);
