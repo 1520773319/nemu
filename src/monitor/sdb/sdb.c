@@ -17,9 +17,6 @@
 #include <cpu/cpu.h>
 #include <readline/readline.h>
 #include <readline/history.h>
-#include <memory/host.h>
-#include <memory/paddr.h>
-#include <memory/vaddr.h>
 #include "regex.h"
 #include "sdb.h"
 #include <math.h>
@@ -29,6 +26,39 @@ static int is_batch_mode = false;
 void init_regex();
 void init_wp_pool();
 word_t hexstr_to_num();
+
+static int cmd_c(char *args);
+static int cmd_q(char *args);
+static int cmd_help(char *args);
+static int cmd_si(char *args);
+static int cmd_p(char *args);
+static int cmd_test(char *args);
+static int cmd_info(char *args);
+static int cmd_memx(char *args);
+static int cmd_wp(char *args);
+static int cmd_delwp(char *args);
+static int cmd_showbre(char *args);
+
+static struct {
+  const char *name;
+  const char *description;
+  int (*handler) (char *);
+} cmd_table [] = {
+  { "help", "Display information about all supported commands", cmd_help },
+  { "c", "Continue the execution of the program", cmd_c },
+  { "q", "Exit NEMU", cmd_q },
+  { "si", "Single step", cmd_si},
+  { "p", "print expression", cmd_p},
+  { "t", "test", cmd_test},
+  { "info", "print registers", cmd_info},
+  { "x", "print memroy", cmd_memx},
+  { "w", "watchpoint", cmd_wp},
+  { "del",  "del breakpoint", cmd_delwp},
+  { "show", "info breakpoint", cmd_showbre},
+  /* TODO: Add more commands */
+
+};
+#define NR_CMD ARRLEN(cmd_table)
 
 /* We use the `readline' library to provide more flexibility to read from stdin. */
 static char* rl_gets() {
@@ -53,36 +83,9 @@ static int cmd_c(char *args) {
   return 0;
 }
 
-
 static int cmd_q(char *args) {
   return -1;
 }
-
-static int cmd_help(char *args);
-static int cmd_si(char *args);
-static int cmd_p(char *args);
-static int cmd_test(char *args);
-static int cmd_info(char *args);
-static int cmd_memx(char *args);
-
-static struct {
-  const char *name;
-  const char *description;
-  int (*handler) (char *);
-} cmd_table [] = {
-  { "help", "Display information about all supported commands", cmd_help },
-  { "c", "Continue the execution of the program", cmd_c },
-  { "q", "Exit NEMU", cmd_q },
-  { "si", "Single step", cmd_si},
-  { "p", "print expression", cmd_p},
-  { "t", "test", cmd_test},
-  { "info", "print registers", cmd_info},
-  { "x", "print memroy", cmd_memx},
-  /* TODO: Add more commands */
-
-};
-
-#define NR_CMD ARRLEN(cmd_table)
 
 static int cmd_help(char *args) {
   /* extract the first argument */
@@ -229,7 +232,7 @@ static int cmd_memx(char *args)
 
   if(ret == 0)
   {
-    mem = host_read(guest_to_host(hexstr_to_num(args)), 4);
+    mem = vaddr_read(hexstr_to_num(args), 4);
     printf("0x%08x\n", mem);
   }
   else if (ret == REG_NOMATCH)
@@ -240,6 +243,48 @@ static int cmd_memx(char *args)
     printf("Regex match failed\n");
 
   return 0;
+}
+
+static int cmd_wp(char *args)
+{
+  create_watchpoint(args);
+  return 0;
+}
+
+static int cmd_delwp(char *args)
+{
+  if(!args) return 0;
+    
+  if(strcmp(args, "all") == 0)
+      del_watchpoint_all();
+  else
+    del_watchpoint(atoi(args));
+  return 0;
+}
+
+static int cmd_showbre(char *args)
+{
+  show_wp_info();
+  return 0;
+}
+
+word_t hexstr_to_num(char *str)
+{
+  int len = strlen(str);
+  word_t sum = 0;
+  int i = 0;
+
+  for(i = len - 1; i > 1; i--)
+  {
+    if(isdigit(str[i]))
+      sum += (str[i] - '0')* pow(16, (len-2-i+1));
+    else if(str[i] >= 'a' && str[i] <= 'f')
+      sum += (str[i] - 'a' + 10)* pow(16, (len-2-i+1));
+    else if(str[i] >= 'A' && str[i] <= 'F')
+      sum += (str[i] - 'A' + 10)* pow(16, (len-2-i+1));
+  }
+
+  return sum;
 }
 
 void sdb_set_batch_mode() {
@@ -290,23 +335,4 @@ void init_sdb() {
 
   /* Initialize the watchpoint pool. */
   init_wp_pool();
-}
-
-word_t hexstr_to_num(char *str)
-{
-  int len = strlen(str);
-  word_t sum = 0;
-  int i = 0;
-
-  for(i = len - 1; i > 1; i--)
-  {
-    if(isdigit(str[i]))
-      sum += (str[i] - '0')* pow(16, (len-2-i+1));
-    else if(str[i] >= 'a' && str[i] <= 'f')
-      sum += (str[i] - 'a' + 10)* pow(16, (len-2-i+1));
-    else if(str[i] >= 'A' && str[i] <= 'F')
-      sum += (str[i] - 'A' + 10)* pow(16, (len-2-i+1));
-  }
-
-  return sum;
 }

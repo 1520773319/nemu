@@ -17,7 +17,13 @@
 #define __SDB_H__
 
 #include <common.h>
+#include <memory/vaddr.h>
 
 word_t expr(char *e, bool *success);
+void create_watchpoint(char *);
+void del_watchpoint(word_t);
+void show_wp_info();
+void check_watchpoint();
+void del_watchpoint_all();
 
 #endif
