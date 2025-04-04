@@ -215,7 +215,7 @@ static int cmd_memx(char *args)
     return 1;
   }
 
-  const char *pattern = "^0x[0-9]*$";
+  const char *pattern = "^0x[0-9a-fA-F]*$";
   regex_t regex;
   word_t mem;
   int ret;
