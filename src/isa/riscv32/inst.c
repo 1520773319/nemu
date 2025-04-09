@@ -35,6 +35,91 @@ enum {
 #define immB() do { *imm = (SEXT(BITS(i, 31, 31), 1) << 12) | (BITS(i, 7, 7) << 11) | (BITS(i, 30, 25) << 5) | (BITS(i, 11, 8) << 1);} while(0)
 #define immJ() do { *imm = (SEXT(BITS(i, 31, 31), 1) << 20) | (BITS(i, 19, 12) << 12) | (BITS(i, 20, 20) << 11) | (BITS(i, 30, 21) << 1);} while(0)
 
+int32_t mulh(int32_t src1, int32_t src2)
+{
+  int32_t h1 = (int32_t)(src1 >> 16);
+  int32_t l1 = src1 & 0x0000FFFF;
+  int32_t h2 = (int32_t)(src2 >> 16);
+  int32_t l2 = src2 & 0x0000FFFF;
+
+  int64_t term1 = (int64_t)h1 * h2;
+  int64_t term2 = (int64_t)h1 * l2;
+  int64_t term3 = (int64_t)h2 * l1;
+  int64_t term4 = (int64_t)l1 * l2;
+
+  int64_t result = ((term1 << 32) +
+                    ((term2 + term3) << 16) +
+                    term4);
+
+  return (int32_t)(result >> 32);
+}
+
+int32_t mulhsu(int32_t src1, uint32_t src2)
+{
+  int32_t h1 = (int32_t)(src1 >> 16);
+  int32_t l1 = src1 & 0x0000FFFF;
+  int32_t h2 = (uint32_t)(src2 >> 16);
+  int32_t l2 = src2 & 0x0000FFFF;
+
+  int64_t term1 = (int64_t)h1 * h2;
+  int64_t term2 = (int64_t)h1 * l2;
+  int64_t term3 = (int64_t)h2 * l1;
+  int64_t term4 = (int64_t)l1 * l2;
+
+  int64_t result = ((term1 << 32) +
+                    ((term2 + term3) << 16) +
+                    term4);
+
+  return (int32_t)(result >> 32);
+}
+
+int32_t mulhu(uint32_t src1, uint32_t src2)
+{
+  int32_t h1 = (int32_t)(src1 >> 16);
+  int32_t l1 = src1 & 0x0000FFFF;
+  int32_t h2 = (uint32_t)(src2 >> 16);
+  int32_t l2 = src2 & 0x0000FFFF;
+
+  int64_t term1 = (int64_t)h1 * h2;
+  int64_t term2 = (int64_t)h1 * l2;
+  int64_t term3 = (int64_t)h2 * l1;
+  int64_t term4 = (int64_t)l1 * l2;
+
+  int64_t result = ((term1 << 32) +
+                    ((term2 + term3) << 16) +
+                    term4);
+
+  return (int32_t)(result >> 32);
+}
+
+int32_t divv(int32_t src1, int32_t src2)
+{
+  if(src2 == 0)
+    return -1;
+
+  int64_t a = (int64_t)src1;
+  int64_t b = (int64_t)src2;
+  int32_t c = (int32_t)(a/b);
+  return c;
+}
+
+int32_t rem(int32_t src1, int32_t src2)
+{
+  if(src2 == 0)
+    return src1;
+
+  int64_t a = (int64_t)src1;
+  int64_t b = (int64_t)src2;
+  int32_t c = (int32_t)(a%b);
+  return c;
+}
+
+void func(Decode *s)
+{
+  s->dnpc = s->pc+2;
+  s->pc = s->dnpc;
+}
+
 static void decode_operand(Decode *s, int *rd, word_t *src1, word_t *src2, word_t *imm, int type) {
   uint32_t i = s->isa.inst;
   int rs1 = BITS(i, 19, 15);
@@ -111,12 +196,12 @@ static int decode_exec(Decode *s) {
   // INSTPAT("0000000 ????? ????? 101 ????? 01110 11", srlw   , I,  );
   // INSTPAT("0100000 ????? ????? 101 ????? 01110 11", sraw   , I,  );
   INSTPAT("0000001 ????? ????? 000 ????? 01100 11", mul    , R, R(rd) = (sword_t)((sword_t)src1 * (sword_t)src2));
-  INSTPAT("0000001 ????? ????? 001 ????? 01100 11", mulh   , R, R(rd) = ((long long)src1 * (long long)src2) >> 32 );
-  // INSTPAT("0000001 ????? ????? 010 ????? 01100 11", mulhsu , R, );
-  // INSTPAT("0000001 ????? ????? 011 ????? 01100 11", mulhu  , R, );
-  INSTPAT("0000001 ????? ????? 100 ????? 01100 11", div    , R, if(src2 == 0) R(rd) = -1; else R(rd) = (sword_t)((sword_t)src1 / (sword_t)src2));
+  INSTPAT("0000001 ????? ????? 001 ????? 01100 11", mulh   , R, R(rd) = mulh(src1, src2));
+  INSTPAT("0000001 ????? ????? 010 ????? 01100 11", mulhsu , R, R(rd) = mulhsu(src1, src2));
+  INSTPAT("0000001 ????? ????? 011 ????? 01100 11", mulhu  , R, R(rd) = mulhu(src1, src2));
+  INSTPAT("0000001 ????? ????? 100 ????? 01100 11", div    , R, R(rd) = divv(src1, src2));
   INSTPAT("0000001 ????? ????? 101 ????? 01100 11", divu   , R, if(src2 == 0) R(rd) = 0xFFFFFFFF; else R(rd) = src1 / src2);
-  INSTPAT("0000001 ????? ????? 110 ????? 01100 11", rem    , R, if(src2 == 0) R(rd) = src1; else R(rd) = (sword_t)((sword_t)src1 % (sword_t)src2));
+  INSTPAT("0000001 ????? ????? 110 ????? 01100 11", rem    , R, R(rd) = rem(src1, src2));
   INSTPAT("0000001 ????? ????? 111 ????? 01100 11", remu   , R, if(src2 == 0) R(rd) = src1; else R(rd) = src1 % src2);
   // INSTPAT("0000001 ????? ????? 000 ????? 01110 11", mulw   , R, );
   // INSTPAT("0000001 ????? ????? 100 ????? 01110 11", divw   , R, );
