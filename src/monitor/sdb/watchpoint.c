@@ -14,16 +14,24 @@
 ***************************************************************************************/
 
 #include "sdb.h"
+#include <math.h>
 
 #define NR_WP 32
 
 #define EBREAK 0x00100073
+
+typedef enum
+{
+  WATCHPOINT,
+  BREAKPOINT
+}point_t;
 
 typedef struct watchpoint {
   int NO;
   struct watchpoint *next;
 
   /* TODO: Add more members if necessary */
+  point_t type;
   word_t addr;
   char cond[100];
   bool enable;
@@ -45,6 +53,25 @@ void init_wp_pool() {
 }
 
 /* TODO: Implement the functionality of watchpoint */
+
+word_t strtohex(char *str)
+{
+  sword_t len = strlen(str);
+  word_t sum = 0;
+
+  for(sword_t i = len - 1; i > 1; i--)
+  {
+    if(str[i] >= '0' && str[i] <= '9')
+      sum += (str[i]-'0') * pow(16, len - i - 1);
+    else if(str[i] >= 'a' && str[i] <= 'f')
+      sum += (str[i] - 'a' + 10) * pow(16, len - i - 1);
+    else if(str[i] >= 'A' && str[i] <= 'F')
+      sum += (str[i] - 'A' + 10) * pow(16, len - i - 1);
+
+  }
+
+  return sum;
+}
 
 void clear_wp(WP *wp)
 {
@@ -86,6 +113,7 @@ void create_watchpoint(char *cond)
 
   wp->addr = 0;
   wp->enable = true;
+  wp->type = WATCHPOINT;
   strncpy(wp->cond, cond, sizeof(wp->cond)-1 );
   
   free_ = free_->next;
@@ -131,6 +159,26 @@ void del_watchpoint(word_t NO)
     printf("No breakpoint number %u\n", NO);
 }
 
+void create_breakpoint(char *cond)
+{
+  WP *wp = free_;
+  
+  if(free_ == NULL)
+  {
+    printf("no space for new wp\n");
+    return;
+  }
+
+  wp->addr = strtohex(cond);
+  wp->enable = true;
+  wp->type = BREAKPOINT;
+  strncpy(wp->cond, cond, sizeof(wp->cond)-1 );
+  
+  free_ = free_->next;
+  wp->next = NULL;
+  add_wp_to_list(&head, wp);
+}
+
 void show_wp_info()
 {
   WP *p = head;
@@ -143,7 +191,12 @@ void show_wp_info()
   printf("%-8s%-13s%-13s%-13s\n", "Num", "Type", "Disp", "what");
   while(p)
   {
-    printf("%-8d%-13s%-13s%-13s\n", p->NO, "watchpoint", p->enable?"keep":"disable", p->cond);
+    printf("%-8d%-13s%-13s%-13s\n", 
+          p->NO, 
+          p->type? "breakpoint" : "watchpoint", 
+          p->enable?"keep":"disable", 
+          p->cond);
+          
     p = p->next;
   }
 }

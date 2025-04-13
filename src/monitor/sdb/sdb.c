@@ -37,6 +37,7 @@ static int cmd_info(char *args);
 static int cmd_memx(char *args);
 static int cmd_wp(char *args);
 static int cmd_delwp(char *args);
+static int cmd_bre(char *args);
 static int cmd_showbre(char *args);
 
 static struct {
@@ -53,6 +54,7 @@ static struct {
   { "info", "print registers", cmd_info},
   { "x", "print memroy", cmd_memx},
   { "w", "watchpoint", cmd_wp},
+  { "b", "breakpoint", cmd_bre},
   { "del",  "del breakpoint", cmd_delwp},
   { "show", "info breakpoint", cmd_showbre},
   /* TODO: Add more commands */
@@ -259,6 +261,12 @@ static int cmd_delwp(char *args)
       del_watchpoint_all();
   else
     del_watchpoint(atoi(args));
+  return 0;
+}
+
+static int cmd_bre(char *args)
+{
+  create_breakpoint(args);
   return 0;
 }
 
