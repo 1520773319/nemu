@@ -17,6 +17,7 @@
 #include <cpu/cpu.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include "watchpoint.h"
 #include "regex.h"
 #include "sdb.h"
 #include <math.h>

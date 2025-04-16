@@ -19,6 +19,7 @@
  * Type 'man regex' for more information about POSIX regex functions.
  */
 #include <regex.h>
+#include "sdb.h"
 
 enum {
   TK_NOTYPE = 256, 
@@ -97,7 +98,6 @@ static int nr_token __attribute__((used))  = 0;
 sword_t eval(Token *p, Token *q, bool *success);
 enum EXPR_TYPE check_parentheses(Token *p, Token *q);
 Token* get_operation_main(Token *p, Token *q);
-extern word_t hexstr_to_num(char *str);
 
 static bool make_token(char *e) {
   int position = 0;

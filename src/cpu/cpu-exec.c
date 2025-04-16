@@ -71,9 +71,22 @@ static void exec_once(Decode *s, vaddr_t pc) {
 #endif
 }
 
+extern bool is_valid_bp(vaddr_t);
+extern void disable_bp(vaddr_t);
+extern void enable_bp(vaddr_t);
+
 static void execute(uint64_t n) {
   Decode s;
   for (;n > 0; n --) {
+    if(is_valid_bp(cpu.pc))
+    {
+      disable_bp(cpu.pc);
+      nemu_state.state = NEMU_STOP;
+      printf("current pc 0x%x\n", cpu.pc);
+      break;
+    }
+    enable_bp(cpu.pc);
+
     exec_once(&s, cpu.pc);
     g_nr_guest_inst ++;
     trace_and_difftest(&s, cpu.pc);

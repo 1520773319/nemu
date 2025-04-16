@@ -20,11 +20,6 @@
 #include <memory/vaddr.h>
 
 word_t expr(char *e, bool *success);
-void create_watchpoint(char *);
-void del_watchpoint(word_t);
-void create_breakpoint(char *);
-void show_wp_info();
-void check_watchpoint();
-void del_watchpoint_all();
+word_t hexstr_to_num(char *str);
 
 #endif

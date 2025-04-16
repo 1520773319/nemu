@@ -32,7 +32,7 @@ typedef struct watchpoint {
 
   /* TODO: Add more members if necessary */
   point_t type;
-  word_t addr;
+  vaddr_t addr;
   char cond[100];
   bool enable;
 
@@ -54,26 +54,7 @@ void init_wp_pool() {
 
 /* TODO: Implement the functionality of watchpoint */
 
-word_t strtohex(char *str)
-{
-  sword_t len = strlen(str);
-  word_t sum = 0;
-
-  for(sword_t i = len - 1; i > 1; i--)
-  {
-    if(str[i] >= '0' && str[i] <= '9')
-      sum += (str[i]-'0') * pow(16, len - i - 1);
-    else if(str[i] >= 'a' && str[i] <= 'f')
-      sum += (str[i] - 'a' + 10) * pow(16, len - i - 1);
-    else if(str[i] >= 'A' && str[i] <= 'F')
-      sum += (str[i] - 'A' + 10) * pow(16, len - i - 1);
-
-  }
-
-  return sum;
-}
-
-void clear_wp(WP *wp)
+static void clear_wp(WP *wp)
 {
   wp->next = NULL;
   wp->addr = 0;
@@ -81,7 +62,7 @@ void clear_wp(WP *wp)
   memset(wp->cond, 0, sizeof(wp->cond));
 }
 
-void add_wp_to_list(WP **list, WP *wp)
+static void add_wp_to_list(WP **list, WP *wp)
 {
   WP *p = *list;
 
@@ -169,7 +150,7 @@ void create_breakpoint(char *cond)
     return;
   }
 
-  wp->addr = strtohex(cond);
+  wp->addr = hexstr_to_num(cond);
   wp->enable = true;
   wp->type = BREAKPOINT;
   strncpy(wp->cond, cond, sizeof(wp->cond)-1 );
@@ -223,4 +204,40 @@ void del_watchpoint_all()
 {
   for(int i = 0; i < NR_WP; i++)
     del_watchpoint(i);
+}
+
+void disable_bp(vaddr_t pc)
+{
+  for (int i = 0; i < NR_WP; i ++) 
+  {
+    if(wp_pool[i].type == BREAKPOINT 
+      && wp_pool[i].addr == pc
+      && wp_pool[i].enable)
+      wp_pool[i].enable = false;
+  }
+  
+}
+
+void enable_bp(vaddr_t pc)
+{
+  for (int i = 0; i < NR_WP; i ++) 
+  {
+    if(wp_pool[i].type == BREAKPOINT 
+      && wp_pool[i].addr == pc
+      && !wp_pool[i].enable)
+      wp_pool[i].enable = true;
+  }
+  
+}
+
+bool is_valid_bp(vaddr_t pc)
+{
+  for (int i = 0; i < NR_WP; i ++) 
+  {
+    if(wp_pool[i].type == BREAKPOINT 
+        && wp_pool[i].addr == pc
+        && wp_pool[i].enable)
+      return true;
+  }
+  return false;
 }
