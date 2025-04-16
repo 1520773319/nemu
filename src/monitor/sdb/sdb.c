@@ -26,7 +26,6 @@ static int is_batch_mode = false;
 
 void init_regex();
 void init_wp_pool();
-word_t hexstr_to_num();
 
 static int cmd_c(char *args);
 static int cmd_q(char *args);
