@@ -21,6 +21,7 @@
 #include "regex.h"
 #include "sdb.h"
 #include <math.h>
+#include "trace.h"
 
 static int is_batch_mode = false;
 
@@ -39,7 +40,8 @@ static int cmd_wp(char *args);
 static int cmd_delwp(char *args);
 static int cmd_bre(char *args);
 static int cmd_showbre(char *args);
-
+static int cmd_showbre(char *args);
+static int cmd_itrace(char *args);
 static struct {
   const char *name;
   const char *description;
@@ -57,6 +59,7 @@ static struct {
   { "b", "breakpoint", cmd_bre},
   { "del",  "del breakpoint", cmd_delwp},
   { "show", "info breakpoint", cmd_showbre},
+  {"itrace", "instruction trace", cmd_itrace}
   /* TODO: Add more commands */
 
 };
@@ -273,6 +276,29 @@ static int cmd_bre(char *args)
 static int cmd_showbre(char *args)
 {
   show_wp_info();
+  return 0;
+}
+
+static int cmd_itrace(char *args)
+{
+  extern itrace_t iringbuf[];
+  extern int iring;
+
+  for (int i = 0; i < IRINFBUF_SIZE; i++)
+  {
+    int index = (iring + i) % IRINFBUF_SIZE;
+    word_t opcode = iringbuf[index].opcode;
+
+    if(iringbuf[index].addr == 0)
+      continue;
+
+    printf("0x%x: %-5s %-27s %02x %02x %02x %02x\n", iringbuf[index].addr, "", iringbuf[index].inst,
+           opcode >> 24 & 0xFF,
+           opcode >> 16 & 0xFF,
+           opcode >> 8 & 0xFF,
+           opcode & 0xFF);
+  }
+
   return 0;
 }
 
