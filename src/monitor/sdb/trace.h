@@ -3,12 +3,12 @@
 
 #include <common.h>
 
-typedef struct inst_trace
+typedef struct inst_ringbuf
 {
     word_t addr;
     char inst[128];
     word_t opcode;
-}itrace_t;
+}iringbuf_t;
 
 #define IRINFBUF_SIZE 16
 void itrace(char *inst, word_t opcode, word_t addr);

@@ -41,7 +41,7 @@ static int cmd_delwp(char *args);
 static int cmd_bre(char *args);
 static int cmd_showbre(char *args);
 static int cmd_showbre(char *args);
-static int cmd_itrace(char *args);
+static int cmd_iringbuf(char *args);
 static struct {
   const char *name;
   const char *description;
@@ -59,7 +59,7 @@ static struct {
   { "b", "breakpoint", cmd_bre},
   { "del",  "del breakpoint", cmd_delwp},
   { "show", "info breakpoint", cmd_showbre},
-  {"itrace", "instruction trace", cmd_itrace}
+  {"iringbuf", "instruction ringbuf", cmd_iringbuf}
   /* TODO: Add more commands */
 
 };
@@ -100,13 +100,13 @@ static int cmd_help(char *args) {
   if (arg == NULL) {
     /* no argument given */
     for (i = 0; i < NR_CMD; i ++) {
-      printf("%s - %s\n", cmd_table[i].name, cmd_table[i].description);
+      printf("%-8s - %s\n", cmd_table[i].name, cmd_table[i].description);
     }
   }
   else {
     for (i = 0; i < NR_CMD; i ++) {
       if (strcmp(arg, cmd_table[i].name) == 0) {
-        printf("%s - %s\n", cmd_table[i].name, cmd_table[i].description);
+        printf("%-8s - %s\n", cmd_table[i].name, cmd_table[i].description);
         return 0;
       }
     }
@@ -279,9 +279,9 @@ static int cmd_showbre(char *args)
   return 0;
 }
 
-static int cmd_itrace(char *args)
+static int cmd_iringbuf(char *args)
 {
-  extern itrace_t iringbuf[];
+  extern iringbuf_t iringbuf[];
   extern int iring;
 
   for (int i = 0; i < IRINFBUF_SIZE; i++)

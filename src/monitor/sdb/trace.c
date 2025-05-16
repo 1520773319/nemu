@@ -2,7 +2,7 @@
 #include <isa.h>
 #include <unistd.h>
 
-itrace_t iringbuf[IRINFBUF_SIZE] = {0};
+iringbuf_t iringbuf[IRINFBUF_SIZE] = {0};
 int iring = 0;
 
 static inline void format_inst(char *inst)
@@ -43,8 +43,8 @@ static inline void format_inst(char *inst)
 
 void itrace(char *inst, word_t opcode, word_t addr)
 {
-    itrace_t trace;
-    memset(&trace, 0, sizeof(itrace_t));
+    iringbuf_t trace;
+    memset(&trace, 0, sizeof(iringbuf_t));
 
     trace.addr = addr;
     trace.opcode = opcode;
