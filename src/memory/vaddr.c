@@ -21,9 +21,11 @@ word_t vaddr_ifetch(vaddr_t addr, int len) {
 }
 
 word_t vaddr_read(vaddr_t addr, int len) {
+  printf("[%-11s] addr: 0x%x  length: %d\n", __FUNCTION__, addr, len);
   return paddr_read(addr, len);
 }
 
 void vaddr_write(vaddr_t addr, int len, word_t data) {
+  printf("[%-11s] addr: 0x%x  length: %d  data: 0x%x\n", __FUNCTION__, addr, len, data);
   paddr_write(addr, len, data);
 }
