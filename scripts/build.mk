@@ -34,8 +34,10 @@ $(OBJ_DIR)/%.o: %.c
 	@$(CC) $(CFLAGS) -c -o $@ $<
 	$(call call_fixdep, $(@:.o=.d), $@)
 # precompile
-	@echo + CCI $<
-	@$(CC) $(CFLAGS) -E -o $(@:.o=.i) $<
+	@if [ "$(CONFIG_CC_PRECOMPILE)" = "y" ]; then \
+		echo + CCI $<; \
+		$(CC) $(CFLAGS) -E -o $(@:.o=.i) $<; \
+	fi
 	
 
 $(OBJ_DIR)/%.o: %.cc
@@ -43,9 +45,12 @@ $(OBJ_DIR)/%.o: %.cc
 	@mkdir -p $(dir $@)
 	@$(CXX) $(CFLAGS) $(CXXFLAGS) -c -o $@ $<
 	$(call call_fixdep, $(@:.o=.d), $@)
+	
 # precompile
-	@echo + CCI $<
-	@$(CC) $(CFLAGS) -E -o $(@:.o=.i) $<
+	@if [ "$(CONFIG_CC_PRECOMPILE)" = "y" ]; then \
+		echo + CCI $<; \
+		$(CC) $(CFLAGS) -E -o $(@:.o=.i) $<; \
+	fi
 
 # Depencies
 -include $(OBJS:.o=.d)
