@@ -14,4 +14,9 @@ typedef struct inst_ringbuf
 void itrace(char *inst, word_t opcode, word_t addr);
 void iringbuf_show();
 
+void *attach_elf(char *);
+void detach_elf(int, void *);
+void readelf(void *);
+void ftrace(word_t);
+
 #endif
