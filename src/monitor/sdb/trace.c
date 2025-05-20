@@ -294,6 +294,6 @@ void ftrace(Decode *s, char *inst)
 
     if (strncmp(inst, "ret", 3) == 0)
         printf("0x%x %-10s: ret  [%s]\n", addr, func ? func : "???", nfunc ? nfunc : "???");
-    else if(strncmp(inst, "jalr", 4) == 0 && strncmp(inst, "jal", 3) == 0)
+    else if(strncmp(inst, "jalr", 4) == 0 || strncmp(inst, "jal", 3) == 0)
         printf("0x%x %-10s: call [%s@0x%x]\n", addr, func ? func : "???", nfunc ? nfunc : "???", naddr);
 }
