@@ -114,12 +114,6 @@ int32_t rem(int32_t src1, int32_t src2)
   return c;
 }
 
-void func(Decode *s)
-{
-  s->dnpc = s->pc+2;
-  s->pc = s->dnpc;
-}
-
 static void decode_operand(Decode *s, int *rd, word_t *src1, word_t *src2, word_t *imm, int type) {
   uint32_t i = s->isa.inst;
   int rs1 = BITS(i, 19, 15);
@@ -252,4 +246,32 @@ word_t get_jalr_address(Decode *s)
 word_t get_ret_address()
 {
   return cpu.gpr[1];
+}
+
+bool is_inst_jal(uint32_t i)
+{
+  return (i & 0b1111111) == 0b1101111;
+}
+
+bool is_inst_jalr(uint32_t i)
+{
+  return ((i & 0b1111111) == 0b1100111) && ((i >> 12) & 0b111) == 0b000;
+}
+
+bool is_inst_ret(uint32_t i)
+{
+  if(!is_inst_jalr(i))
+    return false;
+  
+  int tmp1, tmp2;
+  int rs1 = BITS(i, 19, 15);
+  int *imm = &tmp1, *rd = &tmp2;
+
+  *rd = BITS(i, 11, 7);
+  immI();
+
+  if(*rd == 0 && rs1 == 1 && *imm == 0)
+    return true;
+
+  return false;
 }

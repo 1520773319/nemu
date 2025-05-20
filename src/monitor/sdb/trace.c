@@ -275,25 +275,64 @@ char* get_funcname(word_t addr)
     return NULL;
 }
 
+enum
+{
+    CALL_TYPE,
+    RET_TYPE
+};
+
+static int last = -1;
+static int cur = -1;
+static int space = 0;
+
+extern bool is_inst_jal(uint32_t i);
+extern bool is_inst_jalr(uint32_t i);
+extern bool is_inst_ret(uint32_t i);
 void ftrace(Decode *s, char *inst)
 {
-    word_t addr, naddr;
+    word_t addr = -1, naddr = -1;
     char *func = NULL, *nfunc = NULL;
+    uint32_t i = s->isa.inst;
+    
+    if (is_inst_ret(i))
+    {
+        cur = RET_TYPE;
+        naddr = get_ret_address();
+        if(last == RET_TYPE)
+            space-=1;
+    }
+    else if(is_inst_jalr(i))
+    {
+        cur = CALL_TYPE;
+        naddr = get_jalr_address(s);
+        if(last == CALL_TYPE)   
+            space+=1;
+    }
+    else if (is_inst_jal(i))
+    {
+        cur = CALL_TYPE;
+        naddr = get_jal_address(s);
+        if(last == CALL_TYPE)   
+            space+=1;
+    }
+    else
+        return;
 
     addr = MUXDEF(CONFIG_ISA_x86, s->snpc, s->pc);
-    func = get_funcname(addr);
+    if(addr > 0)
+        func = get_funcname(addr);
 
-    if (strncmp(inst, "ret", 3) == 0)
-        naddr = get_ret_address();
-    else if(strncmp(inst, "jalr", 4) == 0)
-        naddr = get_jalr_address(s);
-    else if (strncmp(inst, "jal", 3) == 0)
-        naddr = get_jal_address(s);
+    if(naddr > 0)
+        nfunc = get_funcname(naddr);
 
-    nfunc = get_funcname(naddr);
-
-    if (strncmp(inst, "ret", 3) == 0)
-        printf("0x%x %-10s: ret  [%s]\n", addr, func ? func : "???", nfunc ? nfunc : "???");
-    else if(strncmp(inst, "jalr", 4) == 0 || strncmp(inst, "jal", 3) == 0)
-        printf("0x%x %-10s: call [%s@0x%x]\n", addr, func ? func : "???", nfunc ? nfunc : "???", naddr);
+    if (cur == RET_TYPE)
+    {
+        printf("ra:0x%x| 0x%x %-10s:%*s ret  [%s]\n",cpu.gpr[1], addr, func ? func : "???", space,"", nfunc ? nfunc : "???");
+        last = cur;
+    }
+    else if(cur == CALL_TYPE)
+    {
+        printf("ra:0x%x| 0x%x %-10s:%*s call [%s@0x%x]\n", cpu.gpr[1],addr, func ? func : "???", space,"", nfunc ? nfunc : "???", naddr);
+        last = cur;
+    }
 }
