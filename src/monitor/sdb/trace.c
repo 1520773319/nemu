@@ -11,7 +11,7 @@ extern word_t get_jalr_address(Decode *s);
 extern word_t get_ret_address();
 
 iringbuf_t iringbuf[IRINFBUF_SIZE] = {0};
-int iring = 0;
+int iring_idx = 0;
 
 void *elf = NULL;
 void *strtab = NULL;
@@ -54,7 +54,7 @@ static inline void format_inst(char *inst)
     strcpy(inst, new_inst);
 }
 
-void itrace(char *inst, word_t opcode, word_t addr)
+void iring(char *inst, word_t opcode, word_t addr)
 {
     iringbuf_t trace;
     memset(&trace, 0, sizeof(iringbuf_t));
@@ -65,8 +65,8 @@ void itrace(char *inst, word_t opcode, word_t addr)
 
     format_inst(trace.inst);
 
-    iringbuf[iring] = trace;
-    iring = (iring + 1) % IRINFBUF_SIZE ;
+    iringbuf[iring_idx] = trace;
+    iring_idx = (iring_idx + 1) % IRINFBUF_SIZE ;
 }
 
 void iringbuf_show(word_t pc)
@@ -75,7 +75,7 @@ void iringbuf_show(word_t pc)
 
     for (int i = 0; i < IRINFBUF_SIZE; i++)
     {
-        int index = (iring + i) % IRINFBUF_SIZE;
+        int index = (iring_idx + i) % IRINFBUF_SIZE;
         word_t opcode = iringbuf[index].opcode;
 
         if(iringbuf[index].addr == 0)

@@ -11,7 +11,7 @@ typedef struct inst_ringbuf
 }iringbuf_t;
 
 #define IRINFBUF_SIZE 16
-void itrace(char *inst, word_t opcode, word_t addr);
+void iring(char *inst, word_t opcode, word_t addr);
 void iringbuf_show();
 
 void *attach_elf(char *);

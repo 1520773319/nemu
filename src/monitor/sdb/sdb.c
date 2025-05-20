@@ -282,11 +282,11 @@ static int cmd_showbre(char *args)
 static int cmd_iringbuf(char *args)
 {
   extern iringbuf_t iringbuf[];
-  extern int iring;
+  extern int iring_idx;
 
   for (int i = 0; i < IRINFBUF_SIZE; i++)
   {
-    int index = (iring + i) % IRINFBUF_SIZE;
+    int index = (iring_idx + i) % IRINFBUF_SIZE;
     word_t opcode = iringbuf[index].opcode;
 
     if(iringbuf[index].addr == 0)
