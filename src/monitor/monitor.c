@@ -15,9 +15,6 @@
 
 #include <isa.h>
 #include <memory/paddr.h>
-#include <trace.h>
-
-extern void *elf;
 
 void init_rand();
 void init_log(const char *log_file);
@@ -47,7 +44,7 @@ void sdb_set_batch_mode();
 static char *log_file = NULL;
 static char *diff_so_file = NULL;
 static char *img_file = NULL;
-static char *elf_file = NULL;
+char *elf_file = NULL;
 static int difftest_port = 1234;
 
 static long load_img() {
@@ -127,10 +124,6 @@ void init_monitor(int argc, char *argv[]) {
 
   /* Load the image to memory. This will overwrite the built-in image. */
   long img_size = load_img();
-
-  /* Load elf symbol-table, for ftrace */
-  elf = attach_elf(elf_file);
-  readelf(elf);
 
   /* Initialize differential testing. */
   init_difftest(diff_so_file, img_size, difftest_port);

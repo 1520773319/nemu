@@ -14,6 +14,11 @@
 ***************************************************************************************/
 
 #include <common.h>
+#include <trace.h>
+
+extern int elf_fd;
+extern void *elf;
+extern char *elf_file;
 
 void init_monitor(int, char *[]);
 void am_init_monitor();
@@ -28,8 +33,21 @@ int main(int argc, char *argv[]) {
   init_monitor(argc, argv);
 #endif
 
+  /* Load elf symbol-table, for ftrace */
+  if(elf_file)
+  {
+    elf = attach_elf(elf_file);
+    readelf(elf);
+  }
+
   /* Start engine. */
   engine_start();
+
+  /* Unload elf */
+  if(elf && elf_fd > 0)
+  {
+    detach_elf(elf_fd, elf);
+  }
 
   return is_exit_status_bad();
 }

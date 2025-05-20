@@ -125,8 +125,6 @@ static void decode_operand(Decode *s, int *rd, word_t *src1, word_t *src2, word_
   int rs1 = BITS(i, 19, 15);
   int rs2 = BITS(i, 24, 20);
   *rd     = BITS(i, 11, 7);
-  // printf("rs1=%d rs2=%d\n", rs1, rs2);
-  // fflush(stdout);
   switch (type) {
     case TYPE_I: src1R();          immI(); break;
     case TYPE_U:                   immU(); break;
@@ -227,4 +225,31 @@ static int decode_exec(Decode *s) {
 int isa_exec_once(Decode *s) {
   s->isa.inst = inst_fetch(&s->snpc, 4);
   return decode_exec(s);
+}
+
+word_t get_jal_address(Decode *s)
+{
+  uint32_t i = s->isa.inst;
+  word_t address = 0;
+  word_t *imm = &address;
+  immJ();
+  address += s->pc;
+  return address;
+}
+
+word_t get_jalr_address(Decode *s)
+{
+  uint32_t i = s->isa.inst;
+  int rs1 = BITS(i, 19, 15);
+  word_t address = 0, src = 0;
+  word_t *imm = &address, *src1 = &src;
+  immI();
+  src1R();
+  address += *src1;
+  return address;
+}
+
+word_t get_ret_address()
+{
+  return cpu.gpr[1];
 }

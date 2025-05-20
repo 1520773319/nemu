@@ -2,7 +2,7 @@
 #define __TRACE_H__
 
 #include <common.h>
-
+#include <cpu/decode.h>
 typedef struct inst_ringbuf
 {
     word_t addr;
@@ -17,6 +17,7 @@ void iringbuf_show();
 void *attach_elf(char *);
 void detach_elf(int, void *);
 void readelf(void *);
-void ftrace(word_t);
+void ftrace(Decode *s, char *inst);
+char *get_funcname(word_t);
 
 #endif

@@ -6,12 +6,17 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+extern word_t get_jal_address(Decode *s);
+extern word_t get_jalr_address(Decode *s);
+extern word_t get_ret_address();
+
 iringbuf_t iringbuf[IRINFBUF_SIZE] = {0};
 int iring = 0;
 
 void *elf = NULL;
 void *strtab = NULL;
 void *symtab = NULL;
+int elf_fd = -1;
 
 static inline void format_inst(char *inst)
 {
@@ -95,23 +100,22 @@ void iringbuf_show(word_t pc)
 void *attach_elf(char *file)
 {
     void *h;
-    int fd;
     struct stat sb;
 
-    fd = open(file, O_RDONLY);
-    if(fd < 0)
+    elf_fd = open(file, O_RDONLY);
+    if(elf_fd < 0)
     {
-        panic("readelf fd < 0");
+        panic("readelf elf_fd < 0");
     }
 
     // Get ELF file size
-    if(fstat(fd, &sb) < 0)
+    if(fstat(elf_fd, &sb) < 0)
     {
         panic("fstat %s fail", file);
     }
 
     // Map ELF header to memory
-    h = mmap(NULL, sb.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+    h = mmap(NULL, sb.st_size, PROT_READ, MAP_PRIVATE, elf_fd, 0);
     if(h == MAP_FAILED)
     {
         panic("mmap %s faild", file);
@@ -211,7 +215,85 @@ void readelf(void *elf)
     }
 }
 
-void ftrace(word_t addr)
+static char *get_funcname_elf32(word_t addr)
 {
+    Elf32_Shdr *strtable = strtab;
+    Elf32_Shdr *symtable = symtab;
+    Elf32_Sym  *symhdr = elf + symtable->sh_offset;
 
+    char *symstr = elf + strtable->sh_offset;
+    int sym_entry = symtable->sh_size / sizeof(Elf32_Sym);
+
+    for (int i = 0; i < sym_entry; i++)
+    {
+        Elf32_Sym *sym = &symhdr[i];
+        if(ELF32_ST_TYPE(sym->st_info) == STT_FUNC && 
+            addr >= sym->st_value && addr < sym->st_value + sym->st_size)
+        {
+            return &symstr[sym->st_name];
+        }
+    }
+    return "???";
+}
+
+static char* get_funcname_elf64(word_t addr)
+{
+    Elf64_Shdr *strtable = strtab;
+    Elf64_Shdr *symtable = symtab;
+    Elf64_Sym  *symhdr = elf + symtable->sh_offset;
+
+    char *symstr = elf + strtable->sh_offset;
+    int sym_entry = symtable->sh_size / sizeof(Elf64_Sym);
+
+    for (int i = 0; i < sym_entry; i++)
+    {
+        Elf64_Sym *sym = &symhdr[i];
+        if(ELF64_ST_TYPE(sym->st_info) == STT_FUNC && 
+            addr >= sym->st_value && addr < sym->st_value + sym->st_size)
+        {
+            return &symstr[sym->st_name];
+        }
+    }
+    return NULL;
+}
+
+char* get_funcname(word_t addr)
+{   
+    if(!elf)
+        panic("%s: elf == NULL", __FUNCTION__);
+
+    if (((Elf32_Ehdr *)elf)->e_ident[EI_CLASS] == ELFCLASS32)
+    {
+        return get_funcname_elf32(addr);
+    }
+    else 
+    {
+        return get_funcname_elf64(addr);
+    }
+
+    panic("%s: unknown elf type", __FUNCTION__);
+    return NULL;
+}
+
+void ftrace(Decode *s, char *inst)
+{
+    word_t addr, naddr;
+    char *func = NULL, *nfunc = NULL;
+
+    addr = MUXDEF(CONFIG_ISA_x86, s->snpc, s->pc);
+    func = get_funcname(addr);
+
+    if (strncmp(inst, "ret", 3) == 0)
+        naddr = get_ret_address();
+    else if(strncmp(inst, "jalr", 4) == 0)
+        naddr = get_jalr_address(s);
+    else if (strncmp(inst, "jal", 3) == 0)
+        naddr = get_jal_address(s);
+
+    nfunc = get_funcname(naddr);
+
+    if (strncmp(inst, "ret", 3) == 0)
+        printf("0x%x %-10s: ret  [%s]\n", addr, func ? func : "???", nfunc ? nfunc : "???");
+    else if(strncmp(inst, "jalr", 4) == 0 && strncmp(inst, "jal", 3) == 0)
+        printf("0x%x %-10s: call [%s@0x%x]\n", addr, func ? func : "???", nfunc ? nfunc : "???", naddr);
 }
