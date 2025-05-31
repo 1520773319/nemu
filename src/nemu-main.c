@@ -15,6 +15,7 @@
 
 #include <common.h>
 #include <trace.h>
+#include <signal.h>
 
 extern int elf_fd;
 extern void *elf;
@@ -25,6 +26,12 @@ void am_init_monitor();
 void engine_start();
 int is_exit_status_bad();
 
+void sigint_handler(int signum)
+{
+  printf("recv sig int: %d. current pc: 0x%x\n", signum, cpu.pc);
+  nemu_state.state = NEMU_STOP;
+}
+
 int main(int argc, char *argv[]) {
   /* Initialize the monitor. */
 #ifdef CONFIG_TARGET_AM
@@ -33,6 +40,7 @@ int main(int argc, char *argv[]) {
   init_monitor(argc, argv);
 #endif
 
+  signal(SIGINT, sigint_handler);
   /* Load elf symbol-table, for ftrace */
   if(elf_file)
   {
